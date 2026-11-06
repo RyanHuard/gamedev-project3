@@ -377,7 +377,7 @@ void ATDHUD::DrawIntro(ATDGameMode* GM)
 	Text(Hole.Name.ToUpper(), TX, PY + 30.f * S, 58.f, Cream, EAlign::Left, true, 3.f);
 	// Chips: par, distance
 	float CX = TX;
-	for (const FString& Chip : { FString::Printf(TEXT("PAR %d"), Hole.Par), FString::Printf(TEXT("%d m"), FMath::RoundToInt(GM->GetDistanceToBasket())), TD::ClockText(FMath::RoundToInt(GM->GetClockMinutes())) })
+	for (const FString& Chip : { FString::Printf(TEXT("PAR %d"), Hole.Par), FString::Printf(TEXT("%d yd"), FMath::RoundToInt(GM->GetDistanceToBasket())), TD::ClockText(FMath::RoundToInt(GM->GetClockMinutes())) })
 	{
 		const FVector2D Sz = Measure(Chip, 22.f);
 		RoundRect(CX, PY + 108.f * S, Sz.X + 32.f * S, 40.f * S, 20.f * S, FLinearColor(1.f, 1.f, 1.f, 0.12f));
@@ -394,14 +394,14 @@ void ATDHUD::DrawPlay(ATDGameMode* GM)
 	const FTDHole& Hole = GM->GetHole();
 	const ETDState State = GM->GetState();
 
-	WorldPill(GM->GetBasketLabelPoint(), FString::Printf(TEXT("%d m"), FMath::RoundToInt(GM->GetDistanceToBasket())));
+	WorldPill(GM->GetBasketLabelPoint(), FString::Printf(TEXT("%d yd"), FMath::RoundToInt(GM->GetDistanceToBasket())));
 
 	// ---- Hole card (top-left) ----
 	const float CardX = 28.f * S, CardY = 28.f * S, CardW = 470.f * S, CardH = 126.f * S;
 	RoundRect(CardX, CardY, CardW, CardH, 22.f * S, PanelBg);
 	Badge(CardX + 64.f * S, CardY + CardH * 0.5f, 44.f * S, FString(), FString::FromInt(GM->GetHoleIndex() + 1));
 	Text(Hole.Name.ToUpper(), CardX + 126.f * S, CardY + 18.f * S, 30.f, Cream, EAlign::Left, true);
-	Text(FString::Printf(TEXT("Par %d   -   %d m to go"), Hole.Par, FMath::RoundToInt(GM->GetDistanceToBasket())), CardX + 126.f * S, CardY + 58.f * S, 20.f, Muted, EAlign::Left, false);
+	Text(FString::Printf(TEXT("Par %d   -   %d yd to go"), Hole.Par, FMath::RoundToInt(GM->GetDistanceToBasket())), CardX + 126.f * S, CardY + 58.f * S, 20.f, Muted, EAlign::Left, false);
 	const FString ThrowStr = FString::Printf(TEXT("THROW %d"), GM->GetStrokes() + (State == ETDState::Aim ? 1 : 0));
 	const FString LieStr = FString(TDLieName(GM->GetLie())).ToUpper();
 	float ChipX = CardX + 126.f * S;
@@ -451,7 +451,7 @@ void ATDHUD::DrawPlay(ATDGameMode* GM)
 
 	// ---- Disc tray (bottom-left) ----
 	const TArray<FTDDiscDef>& Discs = TDDiscs();
-	static const TCHAR* Range[] = { TEXT("~30 m"), TEXT("~50 m"), TEXT("~75 m") };
+	static const TCHAR* Range[] = { TEXT("~30 yd"), TEXT("~50 yd"), TEXT("~75 yd") };
 	float X = 28.f * S;
 	for (int32 i = 0; i < Discs.Num(); ++i)
 	{
@@ -541,7 +541,7 @@ void ATDHUD::DrawLanded(ATDGameMode* GM)
 		Color = WaterBlue;
 		break;
 	default:
-		Big = FString::Printf(TEXT("%d m"), FMath::RoundToInt(GM->GetLastThrowDistance()));
+		Big = FString::Printf(TEXT("%d yd"), FMath::RoundToInt(GM->GetLastThrowDistance()));
 		Small = GM->LastHitTree() ? FString(TEXT("Hit a tree")) : FString(TDLieName(GM->GetLandingLie()));
 		break;
 	}
