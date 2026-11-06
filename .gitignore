@@ -1,0 +1,39 @@
+# Unreal Engine generated folders (rebuilt automatically)
+/Binaries/
+/Build/
+/DerivedDataCache/
+/Intermediate/
+/Saved/
+
+# Packaged game builds (these go on Box, not GitHub)
+/Packaged/
+*.zip
+
+# IDE and generated project files
+.vs/
+.vscode/
+.idea/
+*.sln
+*.slnx
+*.suo
+*.user
+*.VC.db
+*.VC.opendb
+*.vsconfig
+
+# Compiled files
+*.dll
+*.exe
+*.pdb
+*.lib
+*.exp
+*.obj
+
+# Per-user editor content
+/Content/Collections/
+/Content/Developers/
+
+# Operating system files
+.DS_Store
+Thumbs.db
+Desktop.ini
