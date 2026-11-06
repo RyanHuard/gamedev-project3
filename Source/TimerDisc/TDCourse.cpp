@@ -97,10 +97,10 @@ TArray<FTDHole> TDBuildCourse()
 		H.Name = TEXT("The Long Way");
 		H.Tip = TEXT("1 / 2 / 3: change disc");
 		H.Par = 4;
-		H.Basket = P(135.f, 0.f);
-		H.Fairway = { P(0.f, 0.f), P(135.f, 0.f) };
+		H.Basket = P(190.f, 0.f);
+		H.Fairway = { P(0.f, 0.f), P(190.f, 0.f) };
 		H.FairwayWidth = 24.f;
-		H.Bunkers = { Bunker(72.f, 13.f, 6.f, 3.f), Bunker(98.f, -12.f, 5.f, 3.f), Bunker(128.f, 10.f, 4.f, 3.f) };
+		H.Bunkers = { Bunker(72.f, 13.f, 6.f, 3.f), Bunker(98.f, -12.f, 5.f, 3.f), Bunker(150.f, 13.f, 6.f, 3.f), Bunker(183.f, 10.f, 4.f, 3.f) };
 		C.Add(H);
 	}
 	{
@@ -119,12 +119,12 @@ TArray<FTDHole> TDBuildCourse()
 		FTDHole H;
 		H.Name = TEXT("Dogleg Left");
 		H.Par = 4;
-		H.Basket = P(95.f, -48.f);
-		H.Fairway = { P(0.f, 0.f), P(66.f, 0.f), P(95.f, -48.f) };
+		H.Basket = P(135.f, -62.f);
+		H.Fairway = { P(0.f, 0.f), P(90.f, 0.f), P(135.f, -62.f) };
 		H.FairwayWidth = 22.f;
-		H.Trees = { Tree(44.f, -15.f, 1.3f), Tree(50.f, -21.f, 1.3f), Tree(57.f, -26.f, 1.3f), Tree(63.f, -32.f, 1.3f),
-			Tree(42.f, -24.f, 1.2f), Tree(50.f, -31.f, 1.2f), Tree(58.f, -38.f, 1.2f) };
-		H.Bunkers = { Bunker(80.f, 9.f, 6.f, 3.5f), Bunker(102.f, -40.f, 3.5f, 3.f) };
+		H.Trees = { Tree(68.f, -15.f, 1.3f), Tree(74.f, -21.f, 1.3f), Tree(81.f, -26.f, 1.3f), Tree(87.f, -32.f, 1.3f),
+			Tree(66.f, -24.f, 1.2f), Tree(74.f, -31.f, 1.2f), Tree(82.f, -38.f, 1.2f) };
+		H.Bunkers = { Bunker(104.f, 9.f, 6.f, 3.5f), Bunker(142.f, -54.f, 3.5f, 3.f) };
 		C.Add(H);
 	}
 	{
@@ -155,11 +155,11 @@ TArray<FTDHole> TDBuildCourse()
 		FTDHole H;
 		H.Name = TEXT("The Chute");
 		H.Par = 4;
-		H.Basket = P(110.f, 0.f);
-		H.Fairway = { P(0.f, 0.f), P(55.f, 5.f), P(110.f, 0.f) };
+		H.Basket = P(150.f, 0.f);
+		H.Fairway = { P(0.f, 0.f), P(75.f, 5.f), P(150.f, 0.f) };
 		H.FairwayWidth = 13.f;
 		H.TreeLineGap = 2.f;
-		H.Bunkers = { Bunker(116.f, 7.f, 3.f, 2.5f) };
+		H.Bunkers = { Bunker(156.f, 7.f, 3.f, 2.5f) };
 		C.Add(H);
 	}
 	{
