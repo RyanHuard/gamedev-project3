@@ -96,11 +96,6 @@ void ATDCourseActor::BuildSky()
 	PreviewDots->SetUsingAbsoluteLocation(true);
 	PreviewDots->RegisterComponent();
 	AddInstanceComponent(PreviewDots);
-	RingMat = TDAssets::MakeGlow(this, FLinearColor(1.f, 0.8f, 0.2f), 0.6f);
-	PreviewRing = TDAssets::AddMesh(this, RootComponent, TDAssets::Cylinder(), RingMat, FTransform(FRotator::ZeroRotator, FVector::ZeroVector, FVector(1.6f, 1.6f, 0.02f)));
-	PreviewRing->SetUsingAbsoluteLocation(true);
-	PreviewRing->SetCastShadow(false);
-	PreviewRing->SetVisibility(false);
 }
 
 void ATDCourseActor::AddTree(const FVector2D& Pos, float Scale, uint32 Variant)
@@ -602,25 +597,17 @@ void ATDCourseActor::ShowPreview(const FTDFlight* Flight, bool bStrong)
 	PreviewDots->ClearInstances();
 	if (!Flight || Flight->Points.Num() < 2)
 	{
-		PreviewRing->SetVisibility(false);
 		return;
 	}
-	// A dot every ~0.1 s of flight, then a ring where the disc comes to rest.
+	// Dots show the direction and curve over the first third of the flight. The landing spot stays hidden.
 	const int32 Every = FMath::Max(1, FMath::RoundToInt(0.07f / Flight->Dt));
+	const int32 LastDot = Flight->LandIndex / 3;
 	int32 Count = 0;
-	for (int32 i = Every; i <= Flight->LandIndex && Count < MaxPreviewDots; i += Every, ++Count)
+	for (int32 i = Every; i <= LastDot && Count < MaxPreviewDots; i += Every, ++Count)
 	{
 		PreviewDots->AddInstance(FTransform(FRotator::ZeroRotator, Flight->Points[i], FVector(bStrong ? 0.22f : 0.16f)), true);
 	}
 	PreviewMat->SetScalarParameterValue(TEXT("Opacity"), bStrong ? 0.95f : 0.6f);
-
-	const FVector R = Flight->Rest;
-	PreviewRing->SetVisibility(true);
-	PreviewRing->SetWorldLocation(FVector(R.X, R.Y, (Flight->End == ETDEnd::Basket ? BasketBase.Z : R.Z) + 2.f));
-	FLinearColor RC(1.f, 0.8f, 0.2f);
-	if (Flight->End == ETDEnd::Basket) RC = FLinearColor(0.2f, 2.f, 0.4f);
-	if (Flight->End == ETDEnd::Water) RC = FLinearColor(0.2f, 0.6f, 2.f);
-	RingMat->SetVectorParameterValue(TEXT("Color"), RC);
 }
 
 void ATDCourseActor::SetTimeOfDay(float Minutes)

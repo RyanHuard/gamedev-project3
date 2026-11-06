@@ -78,9 +78,7 @@ private:
 
 	UPROPERTY() TArray<TObjectPtr<UStaticMeshComponent>> HoleParts;
 	UPROPERTY() TObjectPtr<UInstancedStaticMeshComponent> PreviewDots;
-	UPROPERTY() TObjectPtr<UStaticMeshComponent> PreviewRing;
 	UPROPERTY() TObjectPtr<UMaterialInstanceDynamic> PreviewMat;
-	UPROPERTY() TObjectPtr<UMaterialInstanceDynamic> RingMat;
 	UPROPERTY() TObjectPtr<UStaticMeshComponent> Flag;
 	UPROPERTY() TObjectPtr<UDirectionalLightComponent> Sun;
 	UPROPERTY() TObjectPtr<UExponentialHeightFogComponent> Fog;
