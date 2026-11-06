@@ -7,6 +7,21 @@ namespace TD
 {
 	constexpr float M = 100.f;
 	inline FVector W(float X, float Y, float Z = 0.f) { return FVector(X * M, Y * M, Z * M); }
+
+	// The round is one afternoon. Times are minutes after midnight.
+	constexpr int32 TeeOffMinutes = 15 * 60;   // 3:00 PM
+	constexpr int32 SunsetMinutes = 20 * 60;   // 8:00 PM
+	constexpr int32 MinutesPerStroke = 10;     // so par (30) finishes exactly at sunset
+
+	inline FString ClockShort(int32 Minutes)
+	{
+		const int32 H = (Minutes / 60) % 12;
+		return FString::Printf(TEXT("%d:%02d"), H == 0 ? 12 : H, Minutes % 60);
+	}
+	inline FString ClockText(int32 Minutes)
+	{
+		return ClockShort(Minutes) + ((Minutes / 60) % 24 >= 12 ? TEXT(" PM") : TEXT(" AM"));
+	}
 }
 
 /** A disc in the bag. The discs are clocks: a pocket watch putter, a wall clock midrange, an alarm clock driver. */

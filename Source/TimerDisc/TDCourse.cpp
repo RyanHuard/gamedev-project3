@@ -106,7 +106,7 @@ TArray<FTDHole> TDBuildCourse()
 	{
 		FTDHole H;
 		H.Name = TEXT("Over the Water");
-		H.Tip = TEXT("Water: +1 stroke");
+		H.Tip = TEXT("Water: +1 stroke, +10 min");
 		H.Par = 3;
 		H.Basket = P(72.f, 0.f);
 		H.Fairway = { P(0.f, 0.f), P(72.f, 0.f) };

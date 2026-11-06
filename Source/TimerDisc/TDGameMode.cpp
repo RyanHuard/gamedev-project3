@@ -171,6 +171,19 @@ int32 ATDGameMode::GetTotalStrokes() const
 	return T;
 }
 
+int32 ATDGameMode::GetRoundStrokes() const
+{
+	// Finished holes, plus the throws so far on the hole still being played.
+	return GetTotalStrokes() + (Scores[HoleIndex] < 0 ? Strokes : 0);
+}
+
+void ATDGameMode::ResetClock()
+{
+	Scores.Init(-1, Holes.Num());
+	Strokes = 0;
+	ClockMinutes = TD::TeeOffMinutes;
+}
+
 int32 ATDGameMode::GetTotalPar(bool bOnlyPlayed) const
 {
 	int32 T = 0;
@@ -223,14 +236,17 @@ void ATDGameMode::Tick(float DeltaSeconds)
 	const float Dt = FMath::Min(DeltaSeconds, 0.05f);
 	StateTime += Dt;
 
+	// Each throw moves the clock on. The sun sweeps to its new position over about a second.
+	const float ClockTarget = TD::TeeOffMinutes + GetRoundStrokes() * TD::MinutesPerStroke;
+	ClockMinutes = FMath::FInterpConstantTo(ClockMinutes, ClockTarget, Dt, float(TD::MinutesPerStroke));
+	Course->SetTimeOfDay(ClockMinutes);
+
 	switch (State)
 	{
 	case ETDState::Aim:
-		PlayTime += Dt;
 		UpdateAim(Dt);
 		break;
 	case ETDState::Throwing:
-		PlayTime += Dt;
 		if (StateTime >= 0.32f)
 		{
 			// Let go of the disc.
@@ -250,7 +266,6 @@ void ATDGameMode::Tick(float DeltaSeconds)
 		}
 		break;
 	case ETDState::Flight:
-		PlayTime += Dt;
 		UpdateFlight(Dt);
 		break;
 	case ETDState::Landed:
@@ -404,8 +419,7 @@ void ATDGameMode::OnConfirm()
 	switch (State)
 	{
 	case ETDState::Title:
-		Scores.Init(-1, Holes.Num());
-		PlayTime = 0.f;
+		ResetClock();
 		StartHole(0);
 		SetState(ETDState::HoleIntro);
 		break;
@@ -444,6 +458,7 @@ void ATDGameMode::OnConfirm()
 	case ETDState::Final:
 		if (StateTime > 1.f)
 		{
+			ResetClock();
 			StartHole(0);
 			if (PC) PC->SetViewTarget(Overview);
 			SetState(ETDState::Title);
@@ -461,6 +476,7 @@ void ATDGameMode::OnBack()
 		UKismetSystemLibrary::QuitGame(this, nullptr, EQuitPreference::Quit, false);
 		return;
 	}
+	ResetClock();
 	StartHole(0);
 	if (APlayerController* PC = GetWorld()->GetFirstPlayerController())
 	{

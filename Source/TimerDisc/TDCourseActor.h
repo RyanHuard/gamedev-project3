@@ -8,6 +8,9 @@
 class UStaticMeshComponent;
 class UInstancedStaticMeshComponent;
 class UMaterialInstanceDynamic;
+class UDirectionalLightComponent;
+class UExponentialHeightFogComponent;
+class USkyLightComponent;
 
 enum class ETDEnd : uint8
 {
@@ -65,6 +68,9 @@ public:
 
 	void Splash(const FVector& At);
 
+	/** Moves the sun: high at tee-off, on the horizon at sunset, then fading into dusk. */
+	void SetTimeOfDay(float Minutes);
+
 private:
 	FTDHole Hole;
 	FVector BasketBase = FVector::ZeroVector;
@@ -76,6 +82,10 @@ private:
 	UPROPERTY() TObjectPtr<UMaterialInstanceDynamic> PreviewMat;
 	UPROPERTY() TObjectPtr<UMaterialInstanceDynamic> RingMat;
 	UPROPERTY() TObjectPtr<UStaticMeshComponent> Flag;
+	UPROPERTY() TObjectPtr<UDirectionalLightComponent> Sun;
+	UPROPERTY() TObjectPtr<UExponentialHeightFogComponent> Fog;
+	UPROPERTY() TObjectPtr<USkyLightComponent> Sky;
+	float LastSunMinutes = -1.f;
 
 	/** Simple collision shapes for the flight (trees, the basket pole). Visual meshes have no collision. */
 	struct FObstacle

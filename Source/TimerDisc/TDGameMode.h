@@ -79,7 +79,9 @@ public:
 	bool IsOverview() const { return bOverview; }
 	int32 GetTotalStrokes() const;
 	int32 GetTotalPar(bool bOnlyPlayed) const;
-	float GetPlayTime() const { return PlayTime; }
+	int32 GetRoundStrokes() const;
+	float GetClockMinutes() const { return ClockMinutes; }
+	int32 GetFinishMinutes() const { return TD::TeeOffMinutes + GetTotalStrokes() * TD::MinutesPerStroke; }
 	ETDLie GetLie() const { return Course->LieAt(FVector2D(Lie)); }
 	ETDLie GetLandingLie() const { return Course->LieAt(FVector2D(Flight.Rest)); }
 
@@ -92,7 +94,7 @@ private:
 	int32 HoleIndex = 0;
 	int32 Strokes = 0;
 	TArray<int32> Scores;
-	float PlayTime = 0.f;
+	float ClockMinutes = TD::TeeOffMinutes;
 
 	UPROPERTY() TObjectPtr<ATDCourseActor> Course;
 	UPROPERTY() TObjectPtr<ATDPlayer> Player;
@@ -136,5 +138,6 @@ private:
 	void FinishLanding();
 	void PositionOverview();
 	void AttachDiscToHand();
+	void ResetClock();
 
 };

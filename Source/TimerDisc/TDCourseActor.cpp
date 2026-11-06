@@ -51,7 +51,7 @@ void ATDCourseActor::BuildSky()
 {
 	bSkyBuilt = true;
 
-	UDirectionalLightComponent* Sun = NewObject<UDirectionalLightComponent>(this);
+	Sun = NewObject<UDirectionalLightComponent>(this);
 	Sun->SetupAttachment(RootComponent);
 	Sun->SetMobility(EComponentMobility::Movable);
 	Sun->SetRelativeRotation(FRotator(-38.f, 140.f, 0.f));
@@ -66,7 +66,7 @@ void ATDCourseActor::BuildSky()
 	Atmos->RegisterComponent();
 	AddInstanceComponent(Atmos);
 
-	USkyLightComponent* Sky = NewObject<USkyLightComponent>(this);
+	Sky = NewObject<USkyLightComponent>(this);
 	Sky->SetupAttachment(RootComponent);
 	Sky->SetMobility(EComponentMobility::Movable);
 	Sky->bRealTimeCapture = true;
@@ -74,7 +74,7 @@ void ATDCourseActor::BuildSky()
 	Sky->RegisterComponent();
 	AddInstanceComponent(Sky);
 
-	UExponentialHeightFogComponent* Fog = NewObject<UExponentialHeightFogComponent>(this);
+	Fog = NewObject<UExponentialHeightFogComponent>(this);
 	Fog->SetupAttachment(RootComponent);
 	Fog->SetFogDensity(0.008f);
 	Fog->SetFogInscatteringColor(FLinearColor(0.45f, 0.6f, 0.8f));
@@ -621,6 +621,28 @@ void ATDCourseActor::ShowPreview(const FTDFlight* Flight, bool bStrong)
 	if (Flight->End == ETDEnd::Basket) RC = FLinearColor(0.2f, 2.f, 0.4f);
 	if (Flight->End == ETDEnd::Water) RC = FLinearColor(0.2f, 0.6f, 2.f);
 	RingMat->SetVectorParameterValue(TEXT("Color"), RC);
+}
+
+void ATDCourseActor::SetTimeOfDay(float Minutes)
+{
+	if (!Sun || FMath::IsNearlyEqual(Minutes, LastSunMinutes, 0.05f))
+	{
+		return;
+	}
+	LastSunMinutes = Minutes;
+
+	// 0 at tee-off, 1 at sunset; after that it keeps getting darker, up to a limit that stays playable.
+	const float T = FMath::Clamp((Minutes - TD::TeeOffMinutes) / float(TD::SunsetMinutes - TD::TeeOffMinutes), 0.f, 1.3f);
+	const float Pitch = T <= 1.f ? FMath::Lerp(-50.f, -1.f, T) : FMath::Lerp(-1.f, 2.5f, (T - 1.f) / 0.3f);
+	const float Yaw = FMath::Lerp(118.f, 168.f, FMath::Min(T, 1.f));  // the sun sets ahead of you, down the fairway
+	Sun->SetRelativeRotation(FRotator(Pitch, Yaw, 0.f));
+
+	const float Evening = FMath::GetMappedRangeValueClamped(FVector2f(0.5f, 1.f), FVector2f(0.f, 1.f), T);
+	const float Dusk = FMath::GetMappedRangeValueClamped(FVector2f(1.f, 1.2f), FVector2f(0.f, 1.f), T);
+	Sun->SetIntensity(FMath::Lerp(FMath::Lerp(7.f, 4.f, Evening), 0.2f, Dusk));
+	Sky->SetIntensity(FMath::Lerp(1.f, 7.f, Dusk));  // twilight stays bright enough to read the hole
+	Sun->SetLightColor(FMath::Lerp(FLinearColor(1.f, 0.92f, 0.82f), FLinearColor(1.f, 0.62f, 0.36f), Evening));
+	Fog->SetFogInscatteringColor(FMath::Lerp(FMath::Lerp(FLinearColor(0.45f, 0.6f, 0.8f), FLinearColor(0.6f, 0.38f, 0.24f), Evening), FLinearColor(0.07f, 0.08f, 0.13f), Dusk));
 }
 
 void ATDCourseActor::Splash(const FVector& At)

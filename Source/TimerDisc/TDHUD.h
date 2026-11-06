@@ -36,7 +36,9 @@ private:
 	void Ring(float CX, float CY, float R, float Thick, const FLinearColor& Color);
 	void Line(float X1, float Y1, float X2, float Y2, float Thick, const FLinearColor& Color);
 	void Pill(const FString& Label, float CX, float Y, float SizePx, const FLinearColor& Bg, const FLinearColor& Fg);
+	void ClockFace(float CX, float CY, float R, const FLinearColor& Rim, float HourAngle, float MinuteAngle);
 	void ClockIcon(float CX, float CY, float R, const FLinearColor& Rim, float HandsAngle);
+	void ClockAt(float CX, float CY, float R, const FLinearColor& Rim, float Minutes);
 	void Badge(float CX, float CY, float R, const FString& Top, const FString& Number);
 	void KeyCap(const FString& Key, float X, float Y, float H);
 	void WorldPill(const FVector& World, const FString& Label);

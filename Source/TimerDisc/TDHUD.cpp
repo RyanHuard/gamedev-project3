@@ -26,9 +26,15 @@ namespace
 	const FLinearColor WaterBlue(0.45f, 0.78f, 1.f);
 	const FLinearColor Ink(0.02f, 0.03f, 0.02f, 1.f);
 
-	FString RelPar(int32 Diff)
+	/** "20 min ahead", "On pace", "10 min behind": how the round compares with making sunset exactly. */
+	FString PaceText(int32 StrokesOverPar)
 	{
-		return Diff == 0 ? FString(TEXT("E")) : FString::Printf(TEXT("%+d"), Diff);
+		const int32 Min = FMath::Abs(StrokesOverPar) * TD::MinutesPerStroke;
+		if (StrokesOverPar == 0)
+		{
+			return TEXT("On pace");
+		}
+		return FString::Printf(TEXT("%d min %s"), Min, StrokesOverPar < 0 ? TEXT("ahead") : TEXT("behind"));
 	}
 
 	FLinearColor WithAlpha(FLinearColor C, float A)
@@ -198,7 +204,7 @@ void ATDHUD::Pill(const FString& Label, float CX, float Y, float SizePx, const F
 	Text(Label, CX, Y + PadY, SizePx, Fg, EAlign::Center, true);
 }
 
-void ATDHUD::ClockIcon(float CX, float CY, float R, const FLinearColor& Rim, float HandsAngle)
+void ATDHUD::ClockFace(float CX, float CY, float R, const FLinearColor& Rim, float HourAngle, float MinuteAngle)
 {
 	Circle(CX, CY + R * 0.08f, R, FLinearColor(0.f, 0.f, 0.f, 0.35f));
 	Circle(CX, CY, R, Rim);
@@ -210,10 +216,20 @@ void ATDHUD::ClockIcon(float CX, float CY, float R, const FLinearColor& Rim, flo
 		Line(CX + FMath::Cos(A) * R * In, CY + FMath::Sin(A) * R * In, CX + FMath::Cos(A) * R * 0.74f, CY + FMath::Sin(A) * R * 0.74f,
 			FMath::Max(1.f, R * 0.06f), Ink);
 	}
-	const float H = HandsAngle;
-	Line(CX, CY, CX + FMath::Cos(H * 0.083f - PI * 0.5f - 1.05f) * R * 0.38f, CY + FMath::Sin(H * 0.083f - PI * 0.5f - 1.05f) * R * 0.38f, R * 0.11f, Ink);
-	Line(CX, CY, CX + FMath::Cos(H - PI * 0.5f + 1.05f) * R * 0.6f, CY + FMath::Sin(H - PI * 0.5f + 1.05f) * R * 0.6f, R * 0.07f, Ink);
+	Line(CX, CY, CX + FMath::Cos(HourAngle) * R * 0.38f, CY + FMath::Sin(HourAngle) * R * 0.38f, R * 0.11f, Ink);
+	Line(CX, CY, CX + FMath::Cos(MinuteAngle) * R * 0.6f, CY + FMath::Sin(MinuteAngle) * R * 0.6f, R * 0.07f, Ink);
 	Circle(CX, CY, R * 0.08f, Rim);
+}
+
+void ATDHUD::ClockIcon(float CX, float CY, float R, const FLinearColor& Rim, float HandsAngle)
+{
+	ClockFace(CX, CY, R, Rim, HandsAngle * 0.083f - PI * 0.5f - 1.05f, HandsAngle - PI * 0.5f + 1.05f);
+}
+
+void ATDHUD::ClockAt(float CX, float CY, float R, const FLinearColor& Rim, float Minutes)
+{
+	// The hands show the actual time on the course.
+	ClockFace(CX, CY, R, Rim, Minutes / 720.f * 2.f * PI - PI * 0.5f, FMath::Fmod(Minutes, 60.f) / 60.f * 2.f * PI - PI * 0.5f);
 }
 
 void ATDHUD::Badge(float CX, float CY, float R, const FString& Top, const FString& Number)
@@ -320,9 +336,10 @@ void ATDHUD::DrawTitle(ATDGameMode* GM)
 	}
 
 	const float X = 110.f * S;
-	ClockIcon(X + 70.f * S, 200.f * S, 70.f * S, FLinearColor(0.85f, 0.1f, 0.07f), Clock * 2.f);
+	ClockAt(X + 70.f * S, 200.f * S, 70.f * S, FLinearColor(0.85f, 0.1f, 0.07f), GM->GetClockMinutes());
 	Text(TEXT("TIMER DISC"), X + 170.f * S, 128.f * S, 128.f, Accent, EAlign::Left, true, 5.f);
-	Text(TEXT("9 holes   -   Par 30"), X, 305.f * S, 30.f, Cream, EAlign::Left, true);
+	Text(FString::Printf(TEXT("Tee off %s   -   Sunset %s"), *TD::ClockText(TD::TeeOffMinutes), *TD::ClockText(TD::SunsetMinutes)), X, 290.f * S, 30.f, Cream, EAlign::Left, true);
+	Text(FString::Printf(TEXT("9 holes. Each throw takes %d minutes. Finish before sunset."), TD::MinutesPerStroke), X, 334.f * S, 24.f, Cream, EAlign::Left, false);
 
 	// Controls
 	float Y = 400.f * S;
@@ -360,7 +377,7 @@ void ATDHUD::DrawIntro(ATDGameMode* GM)
 	Text(Hole.Name.ToUpper(), TX, PY + 30.f * S, 58.f, Cream, EAlign::Left, true, 3.f);
 	// Chips: par, distance
 	float CX = TX;
-	for (const FString& Chip : { FString::Printf(TEXT("PAR %d"), Hole.Par), FString::Printf(TEXT("%d m"), FMath::RoundToInt(GM->GetDistanceToBasket())) })
+	for (const FString& Chip : { FString::Printf(TEXT("PAR %d"), Hole.Par), FString::Printf(TEXT("%d m"), FMath::RoundToInt(GM->GetDistanceToBasket())), TD::ClockText(FMath::RoundToInt(GM->GetClockMinutes())) })
 	{
 		const FVector2D Sz = Measure(Chip, 22.f);
 		RoundRect(CX, PY + 108.f * S, Sz.X + 32.f * S, 40.f * S, 20.f * S, FLinearColor(1.f, 1.f, 1.f, 0.12f));
@@ -396,12 +413,20 @@ void ATDHUD::DrawPlay(ATDGameMode* GM)
 		ChipX += Sz.X + 32.f * S;
 	}
 
-	// ---- Score (top-right) ----
-	const int32 Diff = GM->GetTotalStrokes() - GM->GetTotalPar(true);
-	const float SX = W - 28.f * S - 170.f * S;
-	RoundRect(SX, CardY, 170.f * S, CardH, 22.f * S, PanelBg);
-	Text(TEXT("SCORE"), SX + 85.f * S, CardY + 16.f * S, 18.f, Muted, EAlign::Center, true);
-	Text(RelPar(Diff), SX + 85.f * S, CardY + 42.f * S, 56.f, Diff < 0 ? Good : (Diff > 0 ? Bad : Cream), EAlign::Center, true);
+	// ---- Clock (top-right) ----
+	{
+		const float Now = GM->GetClockMinutes();
+		const int32 Over = GM->GetTotalStrokes() - GM->GetTotalPar(true);
+		const bool bLate = Now > TD::SunsetMinutes;
+		const float BW = 330.f * S;
+		const float SX = W - 28.f * S - BW;
+		RoundRect(SX, CardY, BW, CardH, 22.f * S, PanelBg);
+		ClockAt(SX + 66.f * S, CardY + CardH * 0.5f, 44.f * S, FLinearColor(0.85f, 0.1f, 0.07f), Now);
+		const float TX = SX + 128.f * S;
+		Text(TD::ClockText(FMath::RoundToInt(Now)), TX, CardY + 12.f * S, 40.f, bLate ? Bad : Cream, EAlign::Left, true);
+		Text(bLate ? FString(TEXT("After sunset")) : FString::Printf(TEXT("Sunset %s"), *TD::ClockText(TD::SunsetMinutes)), TX, CardY + 62.f * S, 18.f, Muted, EAlign::Left, false);
+		Text(PaceText(Over), TX, CardY + 90.f * S, 18.f, Over < 0 ? Good : (Over > 0 ? Bad : Cream), EAlign::Left, true);
+	}
 
 	if (State == ETDState::Flight)
 	{
@@ -512,7 +537,7 @@ void ATDHUD::DrawLanded(ATDGameMode* GM)
 		break;
 	case ETDLanding::Water:
 		Big = TEXT("WATER");
-		Small = TEXT("+1 stroke");
+		Small = FString::Printf(TEXT("+1 stroke, +%d min"), TD::MinutesPerStroke);
 		Color = WaterBlue;
 		break;
 	default:
@@ -530,17 +555,18 @@ void ATDHUD::DrawScorecard(ATDGameMode* GM, float CY, bool bHighlightCurrent)
 	const float W = Canvas->ClipX;
 	const TArray<FTDHole>& Holes = GM->GetHoles();
 	const TArray<int32>& Scores = GM->GetScores();
-	const float Cell = 84.f * S, Label = 130.f * S, RowH = 52.f * S;
+	const float Cell = 84.f * S, Label = 130.f * S, RowH = 48.f * S;
 	const float Total = Label + Cell * (Holes.Num() + 1);
 	const float X0 = (W - Total) * 0.5f, Y0 = CY;
-	RoundRect(X0 - 20.f * S, Y0 - 16.f * S, Total + 40.f * S, RowH * 3.f + 32.f * S, 20.f * S, FLinearColor(0.97f, 0.95f, 0.88f, 0.96f));
+	RoundRect(X0 - 20.f * S, Y0 - 16.f * S, Total + 40.f * S, RowH * 4.f + 28.f * S, 20.f * S, FLinearColor(0.97f, 0.95f, 0.88f, 0.96f));
 	RoundRect(X0 - 20.f * S, Y0 - 16.f * S, Total + 40.f * S, RowH + 16.f * S, 20.f * S, FLinearColor(0.1f, 0.3f, 0.12f, 1.f));
 	const FLinearColor CardInk(0.08f, 0.12f, 0.08f);
 	const FLinearColor Red(0.8f, 0.15f, 0.1f), Blue(0.1f, 0.3f, 0.75f);
 
-	Text(TEXT("HOLE"), X0, Y0 + 12.f * S, 20.f, Cream, EAlign::Left, true);
-	Text(TEXT("PAR"), X0, Y0 + RowH + 12.f * S, 20.f, CardInk, EAlign::Left, true);
-	Text(TEXT("SCORE"), X0, Y0 + RowH * 2.f + 12.f * S, 20.f, CardInk, EAlign::Left, true);
+	Text(TEXT("HOLE"), X0, Y0 + 10.f * S, 20.f, Cream, EAlign::Left, true);
+	Text(TEXT("PAR"), X0, Y0 + RowH + 10.f * S, 20.f, CardInk, EAlign::Left, true);
+	Text(TEXT("SCORE"), X0, Y0 + RowH * 2.f + 10.f * S, 20.f, CardInk, EAlign::Left, true);
+	Text(TEXT("FINISHED"), X0, Y0 + RowH * 3.f + 10.f * S, 20.f, CardInk, EAlign::Left, true);
 	int32 ParSum = 0, ScoreSum = 0;
 	for (int32 i = 0; i <= Holes.Num(); ++i)
 	{
@@ -548,15 +574,17 @@ void ATDHUD::DrawScorecard(ATDGameMode* GM, float CY, bool bHighlightCurrent)
 		const bool bTot = i == Holes.Num();
 		if (!bTot && bHighlightCurrent && i == GM->GetHoleIndex())
 		{
-			RoundRect(X - Cell * 0.5f + 6.f * S, Y0 + RowH - 4.f * S, Cell - 12.f * S, RowH * 2.f, 12.f * S, FLinearColor(1.f, 0.74f, 0.2f, 0.35f));
+			RoundRect(X - Cell * 0.5f + 6.f * S, Y0 + RowH - 4.f * S, Cell - 12.f * S, RowH * 3.f, 12.f * S, FLinearColor(1.f, 0.74f, 0.2f, 0.35f));
 		}
-		Text(bTot ? FString(TEXT("TOT")) : FString::FromInt(i + 1), X, Y0 + 12.f * S, 22.f, bTot ? Accent : Cream, EAlign::Center, true);
+		Text(bTot ? FString(TEXT("TOT")) : FString::FromInt(i + 1), X, Y0 + 10.f * S, 22.f, bTot ? Accent : Cream, EAlign::Center, true);
 		const int32 Par = bTot ? ParSum : Holes[i].Par;
 		if (!bTot) ParSum += Par;
-		Text(FString::FromInt(bTot ? ParSum : Par), X, Y0 + RowH + 12.f * S, 22.f, CardInk, EAlign::Center, false);
+		Text(FString::FromInt(bTot ? ParSum : Par), X, Y0 + RowH + 10.f * S, 22.f, CardInk, EAlign::Center, false);
+		const int32 FinishedAt = TD::TeeOffMinutes + ScoreSum * TD::MinutesPerStroke;
 		if (bTot)
 		{
-			Text(FString::FromInt(ScoreSum), X, Y0 + RowH * 2.f + 8.f * S, 28.f, CardInk, EAlign::Center, true);
+			Text(FString::FromInt(ScoreSum), X, Y0 + RowH * 2.f + 8.f * S, 26.f, CardInk, EAlign::Center, true);
+			Text(TD::ClockShort(FinishedAt), X, Y0 + RowH * 3.f + 10.f * S, 20.f, FinishedAt > TD::SunsetMinutes ? Red : CardInk, EAlign::Center, true);
 		}
 		else if (Scores[i] >= 0)
 		{
@@ -565,19 +593,21 @@ void ATDHUD::DrawScorecard(ATDGameMode* GM, float CY, bool bHighlightCurrent)
 			// Golf scorecard convention: circle = under par, square = over par.
 			if (D < 0)
 			{
-				Ring(X, SY, 20.f * S, 2.5f * S, Red);
-				if (D < -1) Ring(X, SY, 15.f * S, 2.f * S, Red);
+				Ring(X, SY, 19.f * S, 2.5f * S, Red);
+				if (D < -1) Ring(X, SY, 14.f * S, 2.f * S, Red);
 			}
 			else if (D > 0)
 			{
-				const float B = 19.f * S;
+				const float B = 18.f * S;
 				Line(X - B, SY - B, X + B, SY - B, 2.5f * S, Blue);
 				Line(X + B, SY - B, X + B, SY + B, 2.5f * S, Blue);
 				Line(X + B, SY + B, X - B, SY + B, 2.5f * S, Blue);
 				Line(X - B, SY + B, X - B, SY - B, 2.5f * S, Blue);
 			}
-			Text(FString::FromInt(Scores[i]), X, Y0 + RowH * 2.f + 10.f * S, 26.f, D < 0 ? Red : (D > 0 ? Blue : CardInk), EAlign::Center, true);
+			Text(FString::FromInt(Scores[i]), X, Y0 + RowH * 2.f + 9.f * S, 24.f, D < 0 ? Red : (D > 0 ? Blue : CardInk), EAlign::Center, true);
 			ScoreSum += Scores[i];
+			const int32 HoleDoneAt = TD::TeeOffMinutes + ScoreSum * TD::MinutesPerStroke;
+			Text(TD::ClockShort(HoleDoneAt), X, Y0 + RowH * 3.f + 11.f * S, 19.f, HoleDoneAt > TD::SunsetMinutes ? Red : CardInk, EAlign::Center, false);
 		}
 	}
 }
@@ -589,7 +619,7 @@ void ATDHUD::DrawHoleDone(ATDGameMode* GM)
 	const int32 Sc = GM->GetScores()[GM->GetHoleIndex()];
 	const int32 Par = GM->GetHole().Par;
 	Text(ATDGameMode::ScoreName(Sc, Par).ToUpper(), W * 0.5f, H * 0.12f, 120.f, Sc < Par ? Good : (Sc > Par ? Bad : Accent), EAlign::Center, true, 6.f);
-	Pill(FString::Printf(TEXT("Hole %d  -  %s  -  %d throw%s on a par %d"), GM->GetHoleIndex() + 1, *GM->GetHole().Name, Sc, Sc == 1 ? TEXT("") : TEXT("s"), Par),
+	Pill(FString::Printf(TEXT("Hole %d  -  %s  -  %d throw%s on a par %d  -  %s"), GM->GetHoleIndex() + 1, *GM->GetHole().Name, Sc, Sc == 1 ? TEXT("") : TEXT("s"), Par, *TD::ClockText(GM->GetFinishMinutes())),
 		W * 0.5f, H * 0.12f + 160.f * S, 26.f, PanelBg, Cream);
 	DrawScorecard(GM, H * 0.47f, true);
 	const bool bLast = GM->GetHoleIndex() + 1 >= GM->GetHoleCount();
@@ -602,14 +632,15 @@ void ATDHUD::DrawFinal(ATDGameMode* GM)
 {
 	const float W = Canvas->ClipX, H = Canvas->ClipY;
 	RoundRect(0, 0, W, H, 0.f, FLinearColor(0.f, 0.02f, 0.01f, 0.6f));
-	const int32 Diff = GM->GetTotalStrokes() - GM->GetTotalPar(false);
-	Text(TEXT("ROUND COMPLETE"), W * 0.5f, H * 0.09f, 100.f, Accent, EAlign::Center, true, 5.f);
-	Text(FString::Printf(TEXT("%d throws  -  %s"), GM->GetTotalStrokes(), *RelPar(Diff)), W * 0.5f, H * 0.09f + 135.f * S, 54.f,
-		Diff < 0 ? Good : (Diff > 0 ? Bad : Cream), EAlign::Center, true, 3.f);
-	const int32 Secs = FMath::FloorToInt(GM->GetPlayTime());
-	Pill(FString::Printf(TEXT("Par %d course   -   %d:%02d on the course"), GM->GetTotalPar(false), Secs / 60, Secs % 60), W * 0.5f, H * 0.09f + 215.f * S, 24.f,
-		PanelBg, Cream);
+	const int32 Finish = GM->GetFinishMinutes();
+	const int32 Margin = TD::SunsetMinutes - Finish;
+	const bool bBeat = Margin >= 0;
+	Text(bBeat ? TEXT("BEAT SUNSET") : TEXT("MISSED SUNSET"), W * 0.5f, H * 0.09f, 100.f, bBeat ? Accent : Bad, EAlign::Center, true, 5.f);
+	Text(FString::Printf(TEXT("Finished %s"), *TD::ClockText(Finish)), W * 0.5f, H * 0.09f + 135.f * S, 54.f, Cream, EAlign::Center, true, 3.f);
+	const FString Gap = Margin == 0 ? FString(TEXT("Right at sunset"))
+		: FString::Printf(TEXT("%d min %s sunset"), FMath::Abs(Margin), Margin > 0 ? TEXT("before") : TEXT("after"));
+	Pill(FString::Printf(TEXT("%s   -   %d throws, par %d"), *Gap, GM->GetTotalStrokes(), GM->GetTotalPar(false)), W * 0.5f, H * 0.09f + 215.f * S, 24.f, PanelBg, Cream);
 	DrawScorecard(GM, H * 0.47f, false);
 	const float Pulse = 0.85f + 0.15f * FMath::Sin(Clock * 4.f);
-	Pill(TEXT("CLICK TO PLAY AGAIN"), W * 0.5f, H * 0.8f, 28.f, WithAlpha(Accent, Pulse), Ink);
+	Pill(TEXT("CLICK TO PLAY AGAIN"), W * 0.5f, H * 0.82f, 28.f, WithAlpha(Accent, Pulse), Ink);
 }
